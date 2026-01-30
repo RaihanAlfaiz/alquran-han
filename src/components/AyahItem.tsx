@@ -2,10 +2,19 @@
 
 import { Ayah } from "@/lib/api";
 import { useBookmark } from "@/context/BookmarkContext";
-import { Bookmark, BookOpen, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useAudio } from "@/context/AudioContext"; // Added for audio functionality
+import {
+  Bookmark,
+  BookOpen,
+  Share2,
+  PenLine,
+  PlayCircle,
+  PauseCircle,
+} from "lucide-react"; // Added PenLine, PlayCircle, PauseCircle
+import { useState, useEffect } from "react"; // Added useEffect
 import TafsirModal from "./TafsirModal";
 import AyahShareModal from "./AyahShareModal";
+import TadabburModal from "./TadabburModal"; // Added TadabburModal
 
 /* Helper to strip HTML tags if present in translation */
 function strip(html: string) {
@@ -65,23 +74,53 @@ export default function AyahItem({
   tafsirData,
 }: {
   ayah: Ayah;
-  surah?: { nomor: string; nama: string };
+  surah: { nomor: string; nama: string }; // Changed to non-optional
   tajwidText?: string;
   tafsirData?: string;
 }) {
+  const { playSurah, isPlaying, currentSurah, togglePlay } = useAudio(); // Added useAudio
   const { toggleBookmark, isBookmarked, saveLastRead } = useBookmark();
   const [isTafsirOpen, setIsTafsirOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isTadabburOpen, setIsTadabburOpen] = useState(false); // Added for TadabburModal
 
-  // Safe Access: Surah might be undefined if not passed from parent
-  const isSaved = surah ? isBookmarked(surah.nomor, ayah.nomor) : false;
+  // Safe Access: Surah is now always defined based on props
+  const isSaved = isBookmarked(surah.nomor, ayah.nomor); // Renamed to isSaved for clarity with new diff
+  const bookmarked = isSaved; // Alias for the new diff's variable name
+
+  // Check if note exists for indicator
+  const noteKey = `alquran-han-note-${surah.nomor}-${ayah.nomor}`;
+  const [hasNote, setHasNote] = useState(false);
+
+  useEffect(() => {
+    // Check initially and whenever modal closes (crude but works for localstorage)
+    if (!isTadabburOpen) {
+      setHasNote(!!localStorage.getItem(noteKey));
+    }
+  }, [isTadabburOpen, noteKey]);
 
   const handleBookmark = () => {
-    if (surah) {
-      toggleBookmark(surah, ayah.nomor);
-      // Otomatis juga set "Last Read" ketika user bookmark/klik ayat
-      saveLastRead(surah, ayah.nomor);
+    toggleBookmark(surah, ayah.nomor);
+    // Otomatis juga set "Last Read" ketika user bookmark/klik ayat
+    saveLastRead(surah, ayah.nomor);
+  };
+
+  // FIX: currentSurah in context has { name, url, nomor }, not surahNumber/ayahNumber
+  // Also playSurah takes object { name, url, nomor }
+
+  const isActive = isPlaying && currentSurah?.nomor === surah.nomor;
+
+  const handlePlay = () => {
+    if (isActive) {
+      togglePlay();
+    } else {
+      playSurah({
+        name: surah.nama,
+        url: "", // handled in context
+        nomor: surah.nomor,
+      });
     }
+    saveLastRead(surah, ayah.nomor);
   };
 
   // Helper to parse tajwid for tooltip
@@ -99,66 +138,12 @@ export default function AyahItem({
       id={`ayah-${ayah.nomor}`} // ID for Auto Scroll
       className="py-12 md:py-16 first:pt-0 border-b border-white/5 last:border-0 flex flex-col items-center text-center group relative scroll-mt-32 transition-colors duration-500 target:bg-sky-500/10 target:rounded-3xl target:border-transparent"
     >
-      {/* 1. Verse Number & Actions */}
-      <div className="mb-8 flex items-center gap-3">
+      {/* 1. Verse Number */}
+      <div className="mb-8 flex items-center justify-center gap-3">
         <div className="px-4 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono text-sky-400/80">
           Verse {ayah.nomor}
         </div>
-
-        {surah && (
-          <div className="flex items-center gap-2">
-            {/* TAFSIR BUTTON */}
-            {tafsirData && (
-              <button
-                onClick={() => setIsTafsirOpen(true)}
-                className="p-2 rounded-full bg-white/5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-300"
-                title="Read Tafsir"
-              >
-                <BookOpen className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* SHARE BUTTON */}
-            <button
-              onClick={() => setIsShareOpen(true)}
-              className="p-2 rounded-full bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all duration-300"
-              title="Share Image"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleBookmark}
-              className={`p-2 rounded-full transition-all duration-300 ${isSaved ? "bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]" : "bg-white/5 text-slate-500 hover:text-sky-400 hover:bg-white/10"}`}
-            >
-              <Bookmark
-                className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`}
-              />
-            </button>
-          </div>
-        )}
       </div>
-
-      {/* Render Tafsir Modal */}
-      {surah && tafsirData && (
-        <TafsirModal
-          isOpen={isTafsirOpen}
-          onClose={() => setIsTafsirOpen(false)}
-          tafsirText={tafsirData}
-          surahName={surah.nama}
-          ayahNumber={ayah.nomor}
-        />
-      )}
-
-      {/* Render Share Modal */}
-      {surah && (
-        <AyahShareModal
-          isOpen={isShareOpen}
-          onClose={() => setIsShareOpen(false)}
-          ayah={ayah}
-          surahName={surah.nama}
-        />
-      )}
 
       {/* 2. Arabic Text (The Star) */}
       <div className="w-full px-4 mb-8">
@@ -177,7 +162,7 @@ export default function AyahItem({
       </div>
 
       {/* 3. Translations (Clean Stack) */}
-      <div className="max-w-2xl px-6 space-y-4">
+      <div className="max-w-2xl px-6 space-y-4 mb-8">
         <p className="text-sky-200/60 font-medium italic text-sm md:text-base leading-relaxed">
           {strip(ayah.tr)}
         </p>
@@ -185,6 +170,93 @@ export default function AyahItem({
           {ayah.id}
         </p>
       </div>
+
+      {/* ACTION BAR ENHANCED (Centered) */}
+      <div className="flex items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
+        {/* Play Button */}
+        <button
+          onClick={handlePlay}
+          className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-lg"
+        >
+          {isActive ? (
+            <PauseCircle className="w-5 h-5 fill-current" />
+          ) : (
+            <PlayCircle className="w-5 h-5 fill-current" />
+          )}
+        </button>
+
+        {/* Bookmark */}
+        <button
+          onClick={handleBookmark}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            isSaved
+              ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+              : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
+        </button>
+
+        {/* Share */}
+        <button
+          onClick={() => setIsShareOpen(true)}
+          className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
+
+        {/* Tadabbur Journal Button */}
+        <button
+          onClick={() => setIsTadabburOpen(true)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all relative ${
+            hasNote
+              ? "bg-amber-500/20 text-amber-400 border border-amber-500/50"
+              : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+          }`}
+          title="Write Tadabbur Note"
+        >
+          <PenLine className="w-4 h-4" />
+          {hasNote && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full animate-bounce"></span>
+          )}
+        </button>
+
+        {/* Tafsir Trigger */}
+        {tafsirData && (
+          <button
+            onClick={() => setIsTafsirOpen(true)}
+            className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-all hidden sm:flex items-center gap-2"
+          >
+            <BookOpen className="w-3 h-3" />
+            <span>Read Tafsir</span>
+          </button>
+        )}
+      </div>
+
+      <AyahShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        ayah={ayah}
+        surahName={surah.nama}
+      />
+
+      {tafsirData && (
+        <TafsirModal
+          isOpen={isTafsirOpen}
+          onClose={() => setIsTafsirOpen(false)}
+          surahName={surah.nama}
+          ayahNumber={ayah.nomor}
+          tafsirText={tafsirData}
+        />
+      )}
+
+      <TadabburModal
+        isOpen={isTadabburOpen}
+        onClose={() => setIsTadabburOpen(false)}
+        surahNumber={surah.nomor}
+        ayahNumber={ayah.nomor}
+        surahName={surah.nama}
+      />
     </div>
   );
 }

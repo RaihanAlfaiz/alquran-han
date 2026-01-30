@@ -21,9 +21,7 @@ export default function PrayerTimesWidget() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Default Jakarta
-  const CITY = "Jakarta";
-  const COUNTRY = "ID";
+  const [locationName, setLocationName] = useState("Jakarta, ID");
 
   useEffect(() => {
     async function fetchTimes() {
@@ -34,11 +32,34 @@ export default function PrayerTimesWidget() {
         const d = date.getDate();
 
         // Method 20 = Kemenag RI
-        const res = await fetch(
-          `https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=${CITY}&country=${COUNTRY}&method=20`,
-        );
+        let url = `https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=Jakarta&country=ID&method=20`;
+
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>(
+              (resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  timeout: 10000,
+                });
+              },
+            );
+
+            const { latitude, longitude } = position.coords;
+            url = `https://api.aladhan.com/v1/timings/${d}-${m}-${y}?latitude=${latitude}&longitude=${longitude}&method=20`;
+            setLocationName("Detected Location"); // Ideally reverse geocode this, but for now simple label
+          } catch (geoError) {
+            console.log("Geolocation blocked or failed, using default Jakarta");
+          }
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
         const timings = data.data.timings;
+
+        if (data.data.meta) {
+          // Try to get timezone or something better if available, but Aladhan by lat/long doesn't always return city name nicely in meta
+          setLocationName(data.data.meta.timezone || "Local Time");
+        }
 
         setTimes(timings);
         calculateNextPrayer(timings);
@@ -94,7 +115,7 @@ export default function PrayerTimesWidget() {
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div className="flex items-center gap-2 text-white/60 text-xs font-bold uppercase tracking-widest">
           <MapPin className="w-4 h-4 text-sky-400" />
-          Jakarta, ID
+          {locationName}
         </div>
 
         {nextPrayer && (

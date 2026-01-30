@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Ayah } from "@/lib/api";
 import AyahItem from "./AyahItem";
+import DeferredAyahs from "./DeferredAyahs";
 import {
   Maximize2,
   Minimize2,
@@ -199,7 +200,7 @@ export default function SurahReader({
             zoom: fontSizeLevel === 0 ? 0.85 : fontSizeLevel === 1 ? 1 : 1.25,
           }}
         >
-          {ayat.map((ayah) => (
+          {ayat.slice(0, 10).map((ayah) => (
             <div
               key={ayah.nomor}
               className={
@@ -220,6 +221,16 @@ export default function SurahReader({
               />
             </div>
           ))}
+
+          {/* Defer rendering remaining ayahs */}
+          <DeferredAyahs
+            ayat={ayat.slice(10)}
+            surah={surah}
+            hafalanMode={hafalanMode}
+            isTajwidMode={isTajwidMode}
+            tajwidMap={tajwidMap}
+            tafsirMap={tafsirMap}
+          />
         </div>
       </div>
     </div>

@@ -1,14 +1,23 @@
 "use client";
 
 import { useAudio } from "@/context/AudioContext";
-import { Pause, Play, Settings2 } from "lucide-react";
+import { Pause, Play, Settings2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import AudioSettingsModal from "./AudioSettingsModal";
 
 export default function GlobalPlayer() {
-  const { currentSurah, isPlaying, togglePlay, duration, currentTime, qari } =
-    useAudio();
+  const {
+    currentSurah,
+    isPlaying,
+    togglePlay,
+    duration,
+    currentTime,
+    qari,
+    sleepTimer,
+    startSleepTimer,
+    cancelSleepTimer,
+  } = useAudio();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   if (!currentSurah) return null;
@@ -92,6 +101,21 @@ export default function GlobalPlayer() {
               title={`Qari: ${qari?.name || "Default"}`}
             >
               <Settings2 className="w-4 h-4" />
+            </button>
+
+            {/* SLEEP TIMER */}
+            <button
+              onClick={() => {
+                // Cycle timers: Off -> 15 -> 30 -> 60 -> Off
+                if (!sleepTimer) startSleepTimer(15);
+                else if (sleepTimer === 15) startSleepTimer(30);
+                else if (sleepTimer === 30) startSleepTimer(60);
+                else cancelSleepTimer();
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border border-sky-500/20 text-xs font-bold ${sleepTimer ? "bg-indigo-500 text-white animate-pulse" : "bg-slate-800 text-sky-400 hover:bg-slate-700"}`}
+              title="Sleep Timer"
+            >
+              {sleepTimer ? `${sleepTimer}m` : <Clock className="w-4 h-4" />}
             </button>
 
             <button

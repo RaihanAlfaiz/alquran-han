@@ -19,6 +19,9 @@ interface AudioContextType {
   seek: (time: number) => void;
   qari: Qari;
   changeQari: (qari: Qari) => void;
+  sleepTimer: number | null;
+  startSleepTimer: (minutes: number) => void;
+  cancelSleepTimer: () => void;
 }
 
 import { qariList, Qari } from "@/lib/reciters";
@@ -95,6 +98,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const onError = (e: any) => {
         console.error("Audio Error:", e);
         setIsPlaying(false);
+        // Simple user feedback - in real app use toast
+        // alert("Failed to play audio. Please check your connection or try another reciter.");
+
+        // Auto Retry once if network error?
+        if (audio.error && audio.error.code === 2) {
+          // 2 = MEDIA_ERR_NETWORK
+          console.log("Network error, retrying once...");
+          audio.load();
+          audio.play().catch((err) => console.error("Retry failed", err));
+        }
       };
 
       audio.addEventListener("timeupdate", updateTime);
@@ -186,6 +199,35 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // SLEEP TIMER LOGIC
+  const [sleepTimer, setSleepTimer] = useState<number | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startSleepTimer = (minutes: number) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    // Stop after X minutes
+    timerRef.current = setTimeout(
+      () => {
+        if (audioRef.current) {
+          // Fade out effect? Maybe later. For now just pause.
+          audioRef.current.pause();
+          setIsPlaying(false);
+          setSleepTimer(null); // Reset
+          // Maybe alert?
+        }
+      },
+      minutes * 60 * 1000,
+    ); // Minutes to MS
+
+    setSleepTimer(minutes);
+  };
+
+  const cancelSleepTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setSleepTimer(null);
+  };
+
   return (
     <AudioContext.Provider
       value={{
@@ -198,6 +240,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         seek,
         qari,
         changeQari,
+        sleepTimer,
+        startSleepTimer,
+        cancelSleepTimer,
       }}
     >
       {children}

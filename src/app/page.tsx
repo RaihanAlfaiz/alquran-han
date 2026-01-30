@@ -6,6 +6,7 @@ import CommandPalette from "@/components/CommandPalette";
 import { BookOpen } from "lucide-react";
 import PrayerTimesWidget from "@/components/PrayerTimesWidget";
 import Link from "next/link";
+import DailyVerse from "@/components/DailyVerse";
 
 export default async function Home() {
   const surahs = await getAllSurahs();
@@ -87,6 +88,9 @@ export default async function Home() {
           </div>
           <MoodWidget />
         </div>
+
+        {/* DAILY VERSE */}
+        <DailyVerse />
 
         {/* Grid Layout */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
