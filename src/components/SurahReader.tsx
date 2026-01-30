@@ -19,10 +19,12 @@ export default function SurahReader({
   ayat,
   surah,
   tajwidMap,
+  tafsirMap,
 }: {
   ayat: Ayah[];
   surah: { nomor: string; nama: string };
   tajwidMap?: Record<string, string>;
+  tafsirMap?: Record<string, string>;
 }) {
   const [isZenMode, setIsZenMode] = useState(false);
   const [isTajwidMode, setIsTajwidMode] = useState(false);
@@ -214,6 +216,7 @@ export default function SurahReader({
                 tajwidText={
                   isTajwidMode && tajwidMap ? tajwidMap[ayah.nomor] : undefined
                 }
+                tafsirData={tafsirMap ? tafsirMap[ayah.nomor] : undefined}
               />
             </div>
           ))}

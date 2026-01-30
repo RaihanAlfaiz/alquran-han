@@ -3,7 +3,9 @@ import { Inter, Amiri } from "next/font/google";
 import "./globals.css";
 import { AudioProvider } from "@/context/AudioContext";
 import { BookmarkProvider } from "@/context/BookmarkContext";
+import { KhatamProvider } from "@/context/KhatamContext";
 import GlobalPlayer from "@/components/GlobalPlayer";
+import CommandPaletteTrigger from "@/components/CommandPaletteTrigger";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,30 +37,33 @@ export default function RootLayout({
       >
         <AudioProvider>
           <BookmarkProvider>
-            {/* Background Mesh */}
-            <div
-              className="fixed inset-0 z-[-1] opacity-30 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(circle at 50% 0%, rgba(56,189,248,0.15), transparent 60%)",
-              }}
-            />
+            <KhatamProvider>
+              {/* Background Mesh */}
+              <div
+                className="fixed inset-0 z-[-1] opacity-30 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle at 50% 0%, rgba(56,189,248,0.15), transparent 60%)",
+                }}
+              />
 
-            {children}
+              {children}
 
-            <GlobalPlayer />
+              <CommandPaletteTrigger />
+              <GlobalPlayer />
 
-            {/* BRANDING FOOTER */}
-            <footer className="w-full py-8 text-center border-t border-white/5 mt-20 relative z-10 glass-panel border-x-0 rounded-none bg-black/20">
-              <p className="text-white/40 text-sm font-light tracking-widest uppercase">
-                Crafted with{" "}
-                <span className="text-rose-500 animate-pulse">❤</span> by{" "}
-                <span className="text-sky-400 font-bold">Raihan</span>
-              </p>
-              <p className="text-[10px] text-white/20 mt-2">
-                © 2026 Alquran-Han. All Rights Reserved.
-              </p>
-            </footer>
+              {/* BRANDING FOOTER */}
+              <footer className="w-full py-8 text-center border-t border-white/5 mt-20 relative z-10 glass-panel border-x-0 rounded-none bg-black/20">
+                <p className="text-white/40 text-sm font-light tracking-widest uppercase">
+                  Crafted with{" "}
+                  <span className="text-rose-500 animate-pulse">❤</span> by{" "}
+                  <span className="text-sky-400 font-bold">Raihan</span>
+                </p>
+                <p className="text-[10px] text-white/20 mt-2">
+                  © 2026 Alquran-Han. All Rights Reserved.
+                </p>
+              </footer>
+            </KhatamProvider>
           </BookmarkProvider>
         </AudioProvider>
       </body>

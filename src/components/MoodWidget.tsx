@@ -19,7 +19,7 @@ export default function MoodWidget() {
       </div>
 
       {/* Mood List (Buttons) */}
-      <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+      <div className="flex flex-wrap gap-3 pb-4">
         {moodList.map((mood) => (
           <button
             key={mood.id}

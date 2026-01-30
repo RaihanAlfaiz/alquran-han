@@ -2,7 +2,10 @@
 
 import { Ayah } from "@/lib/api";
 import { useBookmark } from "@/context/BookmarkContext";
-import { Bookmark } from "lucide-react";
+import { Bookmark, BookOpen, Share2 } from "lucide-react";
+import { useState } from "react";
+import TafsirModal from "./TafsirModal";
+import AyahShareModal from "./AyahShareModal";
 
 /* Helper to strip HTML tags if present in translation */
 function strip(html: string) {
@@ -59,12 +62,16 @@ export default function AyahItem({
   ayah,
   surah,
   tajwidText,
+  tafsirData,
 }: {
   ayah: Ayah;
   surah?: { nomor: string; nama: string };
   tajwidText?: string;
+  tafsirData?: string;
 }) {
   const { toggleBookmark, isBookmarked, saveLastRead } = useBookmark();
+  const [isTafsirOpen, setIsTafsirOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Safe Access: Surah might be undefined if not passed from parent
   const isSaved = surah ? isBookmarked(surah.nomor, ayah.nomor) : false;
@@ -99,16 +106,59 @@ export default function AyahItem({
         </div>
 
         {surah && (
-          <button
-            onClick={handleBookmark}
-            /* ... */
+          <div className="flex items-center gap-2">
+            {/* TAFSIR BUTTON */}
+            {tafsirData && (
+              <button
+                onClick={() => setIsTafsirOpen(true)}
+                className="p-2 rounded-full bg-white/5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-300"
+                title="Read Tafsir"
+              >
+                <BookOpen className="w-4 h-4" />
+              </button>
+            )}
 
-            className={`p-2 rounded-full transition-all duration-300 ${isSaved ? "bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]" : "bg-white/5 text-slate-500 hover:text-sky-400 hover:bg-white/10"}`}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
-          </button>
+            {/* SHARE BUTTON */}
+            <button
+              onClick={() => setIsShareOpen(true)}
+              className="p-2 rounded-full bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all duration-300"
+              title="Share Image"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleBookmark}
+              className={`p-2 rounded-full transition-all duration-300 ${isSaved ? "bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]" : "bg-white/5 text-slate-500 hover:text-sky-400 hover:bg-white/10"}`}
+            >
+              <Bookmark
+                className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`}
+              />
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Render Tafsir Modal */}
+      {surah && tafsirData && (
+        <TafsirModal
+          isOpen={isTafsirOpen}
+          onClose={() => setIsTafsirOpen(false)}
+          tafsirText={tafsirData}
+          surahName={surah.nama}
+          ayahNumber={ayah.nomor}
+        />
+      )}
+
+      {/* Render Share Modal */}
+      {surah && (
+        <AyahShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          ayah={ayah}
+          surahName={surah.nama}
+        />
+      )}
 
       {/* 2. Arabic Text (The Star) */}
       <div className="w-full px-4 mb-8">

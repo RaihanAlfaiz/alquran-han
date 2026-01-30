@@ -1,12 +1,15 @@
 "use client";
 
 import { useAudio } from "@/context/AudioContext";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, Settings2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import AudioSettingsModal from "./AudioSettingsModal";
 
 export default function GlobalPlayer() {
-  const { currentSurah, isPlaying, togglePlay, duration, currentTime } =
+  const { currentSurah, isPlaying, togglePlay, duration, currentTime, qari } =
     useAudio();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   if (!currentSurah) return null;
 
@@ -21,6 +24,7 @@ export default function GlobalPlayer() {
   return (
     <AnimatePresence>
       <motion.div
+        key="player-bar"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
@@ -83,6 +87,14 @@ export default function GlobalPlayer() {
             </p>
 
             <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-10 h-10 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center hover:bg-slate-700 hover:text-white transition-all border border-sky-500/20"
+              title={`Qari: ${qari?.name || "Default"}`}
+            >
+              <Settings2 className="w-4 h-4" />
+            </button>
+
+            <button
               onClick={togglePlay}
               className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
@@ -95,6 +107,11 @@ export default function GlobalPlayer() {
           </div>
         </div>
       </motion.div>
+      <AudioSettingsModal
+        key="settings-modal"
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </AnimatePresence>
   );
 }

@@ -17,7 +17,11 @@ interface AudioContextType {
   duration: number;
   currentTime: number;
   seek: (time: number) => void;
+  qari: Qari;
+  changeQari: (qari: Qari) => void;
 }
+
+import { qariList, Qari } from "@/lib/reciters";
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
@@ -30,6 +34,48 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [qari, setQari] = useState<Qari>(qariList[0]);
+
+  // Load qari from local storage
+  useEffect(() => {
+    const saved = localStorage.getItem("alquran-han-qari");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate if ID exists in list
+      const found = qariList.find((q) => q.id === parsed.id);
+      if (found) setQari(found);
+    }
+  }, []);
+
+  const changeQari = (newQari: Qari) => {
+    setQari(newQari);
+    localStorage.setItem("alquran-han-qari", JSON.stringify(newQari));
+
+    // If a surah is currently loaded, update its source immediately
+    if (currentSurah && audioRef.current) {
+      const padNumber = (num: string) => num.toString().padStart(3, "0");
+      const newUrl = `${newQari.url}${padNumber(currentSurah.nomor)}.mp3`;
+
+      const wasPlaying = isPlaying;
+      const currentTimeBeforeSwitch = audioRef.current.currentTime;
+
+      // Update Audio Source
+      audioRef.current.src = newUrl;
+
+      // Update State
+      setCurrentSurah({ ...currentSurah, url: newUrl });
+
+      // Resume if it was playing, but it will restart from 0 unless we seek.
+      // Seeking immediately might be flaky without 'loadedmetadata', but let's try to just play.
+      // Ideally, we reset to 0 to avoid mismatched ayah timing.
+      if (wasPlaying) {
+        audioRef.current
+          .play()
+          .catch((e) => console.error("Switch Qari Play Error:", e));
+        setIsPlaying(true);
+      }
+    }
+  };
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -78,7 +124,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     // Format: 001.mp3, 002.mp3, ... 114.mp3 (3 Digit padding)
 
     const padNumber = (num: string) => num.toString().padStart(3, "0");
-    const secureUrl = `https://server8.mp3quran.net/afs/${padNumber(surah.nomor)}.mp3`;
+    // Use dynamic Qari URL
+    const secureUrl = `${qari.url}${padNumber(surah.nomor)}.mp3`;
 
     console.log("Playing Full Surah:", secureUrl);
 
@@ -149,6 +196,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         duration,
         currentTime,
         seek,
+        qari,
+        changeQari,
       }}
     >
       {children}

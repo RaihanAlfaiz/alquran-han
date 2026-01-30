@@ -1,5 +1,6 @@
 import { getSurahDetail, getAllSurahs, Ayah } from "@/lib/api";
 import { getTajwidVerses } from "@/lib/tajwid-api";
+import { getTafsir } from "@/lib/tafsir-api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -34,9 +35,10 @@ export default async function SurahDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [surah, tajwidMap] = await Promise.all([
+  const [surah, tajwidMap, tafsirMap] = await Promise.all([
     getSurahDetail(parseInt(id)),
     getTajwidVerses(parseInt(id)),
+    getTafsir(parseInt(id)),
   ]);
 
   if (!surah) notFound();
@@ -105,6 +107,7 @@ export default async function SurahDetail({
         ayat={cleanAyat}
         surah={{ nomor: surah.nomor, nama: surah.nama }}
         tajwidMap={tajwidMap}
+        tafsirMap={tafsirMap}
       />
     </main>
   );

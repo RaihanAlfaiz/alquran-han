@@ -17,7 +17,7 @@ export interface Surah {
   keterangan: string; // description
 }
 
-export interface SurahDetail extends Surah {
+export interface SurahDetail extends Omit<Surah, "ayat"> {
   ayat: Ayah[]; // The verses array
 }
 
